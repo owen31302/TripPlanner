@@ -24,7 +24,22 @@ var http = require('http');
 var pg = require('pg');
 var conString = "postgres://owen:@localhost:5432/test_1";
 var client = new pg.Client(conString);
-var data = require('./routers/databaseconnection');
+client.connect(function(err) {
+    if(err){
+        return console.error('could not connect to postgres', err);
+    }
+
+    client.query('SELECT * FROM studenttrup', function (err, result) {
+        console.log( "====================SELECT=======================");
+        if(err) {
+            console.log(err);
+        }
+        console.log(result);
+        client.end();
+    });
+
+});
+
 
 var mongoose = require('mongoose');
 mongoose.connect(

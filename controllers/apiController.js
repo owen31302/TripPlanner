@@ -2,71 +2,74 @@
  * Created by owen on 4/1/17.
  */
 
-var planner  = require('../models/tripplanner');
 var bodyParser = require('body-parser');
+var pg = require('pg');
+var conString = "postgres://owen:@localhost:5432/test_1";
+//var client = new pg.Client(conString);
+
 
 module.exports = function (app) {
 
-    app.use(bodyParser.json());
-    app.use(bodyParser.urlencoded({extended : true}));
+    //app.use(bodyParser.json());
+    //app.use(bodyParser.urlencoded({extended : true}));
 
-    app.get('/api/todos/:username', function (req, res) {
-
-        planner.find({ username : req.params.username }, function (err, todos) {
-            if(err) throw err;
-
-            res.send(todos);
-        });
+    app.get('/api/', function (req, res) {
         
+
+        pg.connect(conString, function(err, client, done) {
+            if(err){
+                return console.error('could not connect to postgres', err);
+            }
+            console.log("connected to database");
+            client.query('SELECT * FROM studenttrip', function (err, result) {
+                done();
+                console.log( "====================SELECT ALL=======================");
+                if(err) {
+                    console.log(err);
+                }
+                console.log(result.rows);
+                res.send(result.rows);
+            });
+        });
     });
 
-    app.get('/api/todo/:id', function (req, res) {
+    app.get('/api/:id', function (req, res) {
 
-        planner.findById({ _id : req.params.id }, function (err, todo) {
-            if(err) throw err;
-
-            res.send(todo);
-        });
-
+        if(req.params.id){
+            pg.connect(conString, function(err, client, done) {
+                var qString = 'SELECT * FROM studenttrip WHERE sid = 1;';
+                client.query( qString , function (err, result) {
+                    done();
+                    console.log( "====================SELECT sid=======================");
+                    if(err) {
+                        console.log('QQQ' + err);
+                    }
+                    console.log(result);
+                    res.send(result);
+                });
+            });
+        }else{
+            res.send('Cannot find sid.');
+        }
     });
 
     app.post( '/api/todo', function (req, res) {
 
         if(req.body.id){
-            planner.findByIdAndUpdate(req.body.id, {
-                todo : req.body.todo,
-                isDone : req.body.isDone,
-                hasAttachment : req.body.hasAttachment
-            }, function (err, todo) {
-                if(err) throw err;
 
-                res.send('Success');
+            var qString = 'SELECT * FROM studenttrip WHERE sid = ' + req.body.id;
+            client.query( qString , function (err, result) {
+                console.log( "====================SELECT=======================");
+                if(err) {
+                    console.log(err);
+                }
+                console.log(result.rows);
+                res.send(result.rows);
+                client.end();
             });
+
+        }else{
+            res.send('Cannot find sid.');
         }
-
-        else{
-
-            var newTodo= planner({
-                username : 'owen',
-                todo : req.body.todo,
-                isDone : req.body.isDone,
-                hasAttachment : req.body.hasAttachment
-            });
-            newTodo.save(function (err) {
-                if(err) throw err;
-
-                res.send('Success');
-            });
-        }
-    });
-
-    app.delete('/api/todo', function (req, res) {
-
-        planner.findByIdAndRemove(req.body.id, function (err) {
-            if(err) throw err;
-
-            res.send('Success');
-        });
-        
     });
 }
