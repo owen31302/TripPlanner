@@ -2,49 +2,66 @@
  * Created by owen on 4/1/17.
  */
 
-var bodyParser = require('body-parser');
 var pg = require('pg');
 var conString = "postgres://owen:@localhost:5432/test_1";
-//var client = new pg.Client(conString);
 
+// ref: http://kevgary.github.io/tutorials/2015/12/26/node.js-postgreSQL.html
 
 module.exports = function (app) {
 
-    //app.use(bodyParser.json());
-    //app.use(bodyParser.urlencoded({extended : true}));
-
     app.get('/api/', function (req, res) {
-        
+
 
         pg.connect(conString, function(err, client, done) {
             if(err){
                 return console.error('could not connect to postgres', err);
             }
-            console.log("connected to database");
-            client.query('SELECT * FROM studenttrip', function (err, result) {
+            client.query('SELECT * FROM studenttrip ORDER BY sid', function (err, result) {
                 done();
                 console.log( "====================SELECT ALL=======================");
                 if(err) {
                     console.log(err);
                 }
-                console.log(result.rows);
+                //console.log(result.rows);
                 res.send(result.rows);
             });
         });
     });
 
-    app.get('/api/:id', function (req, res) {
+    app.get('/api/:id/:name', function (req, res) {
+        pg.connect(conString, function(err, client, done) {
+            if(err){
+                return console.error('could not connect to postgres', err);
+            }
+            var qString = 'INSERT INTO studenttrip VALUES (' +
+                req.params.id + ', \'' + req.params.name +'\', FALSE);';
+            //console.log(qString);
+            client.query(qString, function (err, result) {
+                done();
+                console.log( "====================INSERT=======================");
+                if(err) {
+                    console.log(err);
+                }
+                //console.log(result);
+                res.send(result);
+            });
+        });
+    });
 
-        if(req.params.id){
+    app.put('/api/:id/:val', function (req, res) {
+
+        if(req.params.id && req.params.val){
             pg.connect(conString, function(err, client, done) {
-                var qString = 'SELECT * FROM studenttrip WHERE sid = 1;';
+                var qString = 'UPDATE studenttrip' +
+                    ' SET trip1 = ' + (req.params.val == 0 ? 'FALSE' : 'TRUE')+
+                    ' WHERE sid = ' + req.params.id + ';';
                 client.query( qString , function (err, result) {
                     done();
-                    console.log( "====================SELECT sid=======================");
+                    console.log( "====================UPDATE=======================");
                     if(err) {
-                        console.log('QQQ' + err);
+                        console.log(err);
                     }
-                    console.log(result);
+                    //console.log(result);
                     res.send(result);
                 });
             });
@@ -53,23 +70,40 @@ module.exports = function (app) {
         }
     });
 
-    app.post( '/api/todo', function (req, res) {
+    app.post( '/api/cnt', function (req, res) {
 
-        if(req.body.id){
 
-            var qString = 'SELECT * FROM studenttrip WHERE sid = ' + req.body.id;
+        pg.connect(conString, function(err, client, done) {
+            var qString = 'SELECT COUNT(*) ' +
+                'FROM studenttrip ' +
+                'WHERE trip1 = TRUE';
+            //console.log(qString);
             client.query( qString , function (err, result) {
-                console.log( "====================SELECT=======================");
+                done();
+                console.log( "====================COUNT=======================");
                 if(err) {
                     console.log(err);
                 }
-                console.log(result.rows);
-                res.send(result.rows);
-                client.end();
+                //console.log(result);
+                res.send(result);
             });
-
-        }else{
-            res.send('Cannot find sid.');
-        }
+        });
     });
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
